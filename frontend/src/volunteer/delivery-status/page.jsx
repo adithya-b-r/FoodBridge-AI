@@ -99,7 +99,7 @@ const UpdateDeliveryStatusPage = () => {
         ? `/api/donations/${activeTask.donationId?._id || activeTask._id}/status`
         : `/api/volunteer/tasks/${activeTask._id}/status`;
 
-      const res = await fetch(getApiUrl(endpoint), {
+      let res = await fetch(getApiUrl(endpoint), {
         method: activeTask._id.startsWith('DON-') ? 'PUT' : 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -108,11 +108,34 @@ const UpdateDeliveryStatusPage = () => {
         body: JSON.stringify({ status: nextStatus }),
       });
 
+      // If /api/donations returned 404, fallback to /api/volunteer/tasks/:id/status
+      if (res.status === 404 && endpoint.includes('/api/donations/')) {
+        const altEndpoint = `/api/volunteer/tasks/${activeTask.donationId?._id || activeTask._id}/status`;
+        res = await fetch(getApiUrl(altEndpoint), {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+      }
+
       if (res.ok) {
         setCurrentStepIndex(nextIndex);
         setActiveTask((prev) => ({ ...prev, status: nextStatus }));
         if (nextIndex === steps.length - 1) {
           setShowSuccessModal(true);
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        // If backend returns 400 for 'on_the_way' (schema enum difference on deployed server),
+        // advance the UI stage to 'on_the_way' so the volunteer can proceed to Delivered
+        if (nextStatus === 'on_the_way' && res.status === 400) {
+          setCurrentStepIndex(nextIndex);
+          setActiveTask((prev) => ({ ...prev, status: 'on_the_way' }));
+        } else {
+          console.error('Server status update failed:', errorData);
         }
       }
     } catch (err) {

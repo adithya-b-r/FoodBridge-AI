@@ -19,7 +19,7 @@ const volunteerTaskSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['assigned', 'accepted', 'picked_up', 'delivered', 'cancelled'],
+      enum: ['assigned', 'accepted', 'picked_up', 'on_the_way', 'delivered', 'cancelled'],
       default: 'assigned',
     },
     pickupPhoto: {

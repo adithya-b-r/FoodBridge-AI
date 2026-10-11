@@ -17,7 +17,7 @@ const getVolunteerStats = async (req, res, next) => {
     });
 
     const activeTasks = await Donation.countDocuments({
-      status: { $in: ['accepted', 'picked_up'] },
+      status: { $in: ['accepted', 'picked_up', 'on_the_way'] },
     });
 
     const feedbacks = await Feedback.find({ volunteerId: req.user._id });
@@ -93,7 +93,7 @@ const getAssignedTasks = async (req, res, next) => {
       .sort({ createdAt: -1 });
 
     const rawActiveDonations = await Donation.find({
-      status: { $in: ['accepted', 'picked_up'] },
+      status: { $in: ['accepted', 'picked_up', 'on_the_way'] },
     })
       .populate('donorId', 'name email phone address organizationName formattedAddress locationName location latitude longitude')
       .populate('ngoId', 'name email phone address organizationName formattedAddress locationName location latitude longitude')
@@ -207,11 +207,19 @@ const updateTaskStatus = async (req, res, next) => {
       const donation = await Donation.findById(req.params.id);
       if (donation) {
         task = await VolunteerTask.findOne({ donationId: donation._id });
+        if (!task) {
+          task = new VolunteerTask({
+            donationId: donation._id,
+            volunteerId: req.user._id,
+            ngoId: donation.ngoId || null,
+            status: status || 'assigned',
+          });
+        }
       }
     }
 
     if (!task) {
-      return res.status(404).json({ success: false, message: 'Task not found' });
+      return res.status(404).json({ success: false, message: 'Task or donation not found' });
     }
 
     task.status = status;
@@ -229,6 +237,19 @@ const updateTaskStatus = async (req, res, next) => {
       donationUpdate.pickupPhoto = task.pickupPhoto;
     }
     const updatedDonation = await Donation.findByIdAndUpdate(task.donationId, donationUpdate, { new: true });
+
+    if (updatedDonation && status === 'on_the_way') {
+      if (updatedDonation.ngoId) {
+        await createNotification({
+          userId: updatedDonation.ngoId,
+          role: 'ngo',
+          title: 'Food Donation En Route',
+          message: `Volunteer ${req.user.name || 'Courier'} is now on the way with donation '${updatedDonation.title}'.`,
+          type: 'info',
+          link: '/ngo/track-volunteer',
+        });
+      }
+    }
 
     // Send notifications when delivery status is updated
     if (updatedDonation && status === 'delivered') {

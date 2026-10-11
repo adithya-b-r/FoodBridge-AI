@@ -241,7 +241,7 @@ const getAIPredictions = async (req, res, next) => {
     const allDonorDonations = await Donation.find({ donorId: req.user._id }).sort({ createdAt: -1 });
 
     const activeDonations = allDonorDonations.filter((d) =>
-      ['available', 'accepted', 'picked_up'].includes(d.status)
+      ['available', 'accepted', 'picked_up', 'on_the_way'].includes(d.status)
     );
     const completedDonations = allDonorDonations.filter((d) => d.status === 'delivered');
 

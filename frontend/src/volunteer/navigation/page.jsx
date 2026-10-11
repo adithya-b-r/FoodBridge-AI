@@ -83,14 +83,28 @@ const NavigationPage = () => {
             ngoLng: ngoObj?.longitude || ngoObj?.location?.lng || 0,
             remainingDistance: '—',
             estimatedETA: '—',
-            statusText: isVerified ? 'In Transit to NGO' : 'Pickup Verification Pending',
+            statusText: current.status === 'delivered'
+              ? 'Delivered at NGO Hub'
+              : current.status === 'on_the_way'
+              ? 'In Transit to NGO'
+              : isVerified
+              ? 'Food Picked Up (Ready to Depart)'
+              : 'Pickup Verification Pending',
             pickupPhoto: photo,
             isVerified: isVerified,
             status: current.status,
           });
-          if (current.status === 'assigned') setCurrentStep(1);
-          if (current.status === 'picked_up' || isVerified) setCurrentStep(3);
-          if (current.status === 'on_the_way') setCurrentStep(4);
+          if (current.status === 'delivered') {
+            setCurrentStep(5);
+          } else if (current.status === 'on_the_way') {
+            setCurrentStep(4);
+          } else if (current.status === 'picked_up' || isVerified) {
+            setCurrentStep(3);
+          } else if (current.status === 'accepted') {
+            setCurrentStep(2);
+          } else {
+            setCurrentStep(1);
+          }
         } else if (rawDonations.length > 0) {
           const d = rawDonations[0];
           const photo = d.pickupPhoto || '';
@@ -115,12 +129,28 @@ const NavigationPage = () => {
             ngoLng: ngoObj?.longitude || ngoObj?.location?.lng || 0,
             remainingDistance: '—',
             estimatedETA: '—',
-            statusText: isVerified ? 'In Transit to NGO' : 'Pickup Verification Pending',
+            statusText: d.status === 'delivered'
+              ? 'Delivered at NGO Hub'
+              : d.status === 'on_the_way'
+              ? 'In Transit to NGO'
+              : isVerified
+              ? 'Food Picked Up (Ready to Depart)'
+              : 'Pickup Verification Pending',
             pickupPhoto: photo,
             isVerified: isVerified,
             status: d.status,
           });
-          if (isVerified) setCurrentStep(3);
+          if (d.status === 'delivered') {
+            setCurrentStep(5);
+          } else if (d.status === 'on_the_way') {
+            setCurrentStep(4);
+          } else if (d.status === 'picked_up' || isVerified) {
+            setCurrentStep(3);
+          } else if (d.status === 'accepted') {
+            setCurrentStep(2);
+          } else {
+            setCurrentStep(1);
+          }
         } else {
           setActiveTask(null);
         }

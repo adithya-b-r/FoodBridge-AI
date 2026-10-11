@@ -157,7 +157,7 @@ const getDonationHistory = async (req, res, next) => {
           const task = await VolunteerTask.findOne({ donationId: d._id });
           if (task && task.pickupPhoto && task.pickupPhoto !== '[object Object]') {
             obj.pickupPhoto = task.pickupPhoto;
-          } else if (obj.status === 'picked_up' || obj.status === 'delivered') {
+          } else if (obj.status === 'picked_up' || obj.status === 'on_the_way' || obj.status === 'delivered') {
             obj.pickupPhoto = obj.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
           }
         }
@@ -185,11 +185,11 @@ const getNgoStats = async (req, res, next) => {
     const nearbyCount = await Donation.countDocuments({ status: 'available' });
     const activeDonationsCount = await Donation.countDocuments({
       ngoId,
-      status: { $in: ['assigned', 'accepted', 'picked_up'] },
+      status: { $in: ['assigned', 'accepted', 'picked_up', 'on_the_way'] },
     });
     const acceptedDonations = await Donation.find({
       ngoId,
-      status: { $in: ['accepted', 'picked_up', 'delivered'] },
+      status: { $in: ['accepted', 'picked_up', 'on_the_way', 'delivered'] },
     });
 
     const totalMealsReceived = acceptedDonations.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
@@ -226,7 +226,7 @@ const getDonationDetails = async (req, res, next) => {
       const task = await VolunteerTask.findOne({ donationId: donation._id });
       if (task && task.pickupPhoto && task.pickupPhoto !== '[object Object]') {
         obj.pickupPhoto = task.pickupPhoto;
-      } else if (obj.status === 'picked_up' || obj.status === 'delivered') {
+      } else if (obj.status === 'picked_up' || obj.status === 'on_the_way' || obj.status === 'delivered') {
         obj.pickupPhoto = obj.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
       }
     }
@@ -250,7 +250,7 @@ const getAvailableVolunteers = async (req, res, next) => {
       rawVolunteers.map(async (v) => {
         const activeTaskCount = await Donation.countDocuments({
           volunteerId: v._id,
-          status: { $in: ['assigned', 'accepted', 'picked_up'] },
+          status: { $in: ['assigned', 'accepted', 'picked_up', 'on_the_way'] },
         });
         const obj = v.toObject();
         obj.activeTaskCount = activeTaskCount;

@@ -192,11 +192,17 @@ export const determineActiveRoute = (status, volunteerPos, donorPos, ngoPos) => 
     : null;
 
   if (isPostPickup) {
+    const phaseLabel = status === 'delivered'
+      ? 'Delivered at NGO Hub'
+      : status === 'on_the_way'
+      ? 'In Transit to NGO Dropoff'
+      : 'Food Picked Up (Ready to Depart)';
+
     return {
       from: validVol || validDonor,
       to: validNgo,
       routeType: 'volunteer_to_ngo',
-      phaseLabel: 'In Transit to NGO Dropoff',
+      phaseLabel,
     };
   }
 
